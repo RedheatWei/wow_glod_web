@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="/static/js/jquery/jquery.min.js"></script>
+    <script src="/static/js/echarts/echarts.simple.min.js"></script>
+</head>
+<body>
+<div id="main" style="width: 600px;height:400px;"></div>
+</body>
+<script type="text/javascript">
+    var myChart = echarts.init(document.getElementById('main'));
+    $.get('MainChartApi/').done(function (data) {
+        myChart.setOption({
+            title: {
+                text: '异步数据加载示例'
+            },
+            tooltip: {},
+            legend: {
+                data: ['销量']
+            },
+            xAxis: {
+                data: data.xAxis
+            },
+            yAxis: {},
+            series: [{
+                name: '销量',
+                type: 'bar',
+                data: data.yAxis
+            }]
+        });
+    });
+</script>
+</html>

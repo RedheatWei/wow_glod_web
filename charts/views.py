@@ -5,6 +5,7 @@ from charts.models import WowGlodPrice
 import json
 import time
 
+
 class MainChart(View):
     def get(self, request):
         return render(request,'charts/mainchar.html')
@@ -13,10 +14,11 @@ class MainChart(View):
 
 class MainChartApi(View):
     def get(self, request):
-        time_interval = create_timestrap()
+        time_interval = create_timestrap(24,25200)
         glod_price_obj = get_min_unit(time_interval)
-        data = create_data(glod_price_obj)
-        return JsonResponse(data)
+        main_data = struct_change(glod_price_obj)
+        main_data.reverse()
+        return JsonResponse({"data":main_data})
     def post(self,request):
        pass
 
@@ -27,11 +29,15 @@ def create_timestrap(count=24,interval=3600):
 def get_min_unit(time_interval):
     glod_price_obj = []
     for interval in time_interval:
-        glod_price_obj.append(WowGlodPrice.objects.filter(push_timestrap__range=(interval[1],interval[0])).order_by('-unit_price')[:1])
-    print(glod_price_obj)
+        glod_price_obj.append(WowGlodPrice.objects.filter(push_timestrap__range=(interval[1],interval[0])).order_by('-unit_price').first())
     return glod_price_obj
 
-def create_data(min_unit):
-    xAxis = [min.push_timestrap for min in min_unit]
-    yAxis = [min.unit_price for min in min_unit]
-    return {"xAxis":xAxis,"yAxis":yAxis}
+def struct_change(all_data):
+    base_struct = [f.name for f in WowGlodPrice._meta.get_fields()]
+    main_data = []
+    for data in all_data:
+        single_data = {}
+        for base in base_struct:
+            single_data[base] = getattr(data,base,None)
+        main_data.append(single_data)
+    return main_data

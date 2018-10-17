@@ -11,7 +11,7 @@ class WowGlodPrice(models.Model):
     server = models.CharField(verbose_name='服务器',max_length=60)
     camp = models.CharField(verbose_name='阵营',max_length=60)
     order_id = models.CharField(verbose_name='订单ID',max_length=60)
-    push_timestrap = models.IntegerField(verbose_name='提交时间',max_length=60)
+    push_timestrap = models.IntegerField(verbose_name='提交时间')
     url = models.CharField(verbose_name='url',max_length=200)
 
     class Meta:

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>wow金币价格</title>
+    <title>WOW金币价格</title>
     <script src="/static/js/jquery/jquery.min.js"></script>
     <script src="/static/js/echarts/echarts.min.js"></script>
 </head>
@@ -106,7 +106,7 @@
                 unit_price_chart.hideLoading();
                 unit_price_chart.setOption({
                     title: {
-                        text: 'wow所有服价格曲线',
+                        text: 'WOW所有服金币1元单价曲线',
                     },
                     tooltip: {
                         trigger: 'item',
@@ -128,10 +128,16 @@
                         data: ['单价最大值', '单价最小值', '单价平均值']
                     },
                     xAxis: {
+                        name: '时间',
                         type: 'category',
                         data: avg_xAxis,
+                        axisLabel: {
+                            interval: 0,
+                            rotate: 20
+                        }
                     },
                     yAxis: {
+                        name: '单价',
                         type: 'value',
                         min: 'dataMin',
                     },

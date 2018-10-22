@@ -2,26 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>wow金币价格</title>
     <script src="/static/js/jquery/jquery.min.js"></script>
-    <script src="/static/js/echarts/echarts.simple.min.js"></script>
+    <script src="/static/js/echarts/echarts.min.js"></script>
 </head>
 <body>
 <form action="">
-    <select name="days" id="days">
-        <option value="">最近X天的数据</option>
-        <option value="1">1天</option>
-        <option value="7">7天</option>
-        <option value="10">10天</option>
-        <option value="15">15天</option>
-        <option value="20">20天</option>
-        <option value="30">30天</option>
+    <select name="points" id="points" class="options-select">
+        <option value="{{ points_list.0 }}">取{{ points_list.0 }}个点位数据</option>
+        {% for point in points_list %}
+            <option value="{{ point }}">{{ point }}</option>
+        {% endfor %}
+
+    </select>
+    <select name="hours" id="hours" class="options-select">
+        <option value="{{ hours_list.0 }}">隔{{ hours_list.0 }}小时取一点</option>
+        {% for hour in hours_list %}
+            <option value="{{ hour }}">{{ hour }}</option>
+        {% endfor %}
     </select>
 </form>
+<h5><span id="count_days">{{ count_days }}</span>天数据</h5>
 <div id="unit_price_chart" style="width: 900px;height:560px;"></div>
 </body>
 <script type="text/javascript">
-
     function formatDateTime(inputTime) {
         var date = new Date(inputTime);
         var y = date.getFullYear();
@@ -38,36 +42,124 @@
         return y + '-' + m + '-' + d + ' ' + h + ':' + minute + ':' + second;
     }
 
+    function collect_max_min_info(data) {
+        var text =
+            '大区:' + data['area'] + '</br>' +
+            '服务器:' + data['server'] + '</br>' +
+            '阵营:' + data['camp'] + '</br>' +
+            '金币:' + data['glod'] + '</br>' +
+            '价格:' + data['price'] + '</br>' +
+            '单价:' + data['unit_price'] + '</br>' +
+            '下单时间:' + formatDateTime(data['push_timestrap'] * 1000) + '</br>' +
+            '地址:' + '<a href="' + data['url'] + '" target="_blank">' + data['url'] + '</a>' + '</br>';
+        return text;
+    }
+
+    function collect_avg_info(data) {
+        var text =
+            '平均值:' + data['avg_unit_price'] + '</br>' +
+            '订单数:' + data['count'] + '</br>' +
+            '下单时间(平均):' + formatDateTime(data['push_timestrap'] * 1000) + '</br>';
+        return text;
+    }
+
     var unit_price_chart = echarts.init(document.getElementById('unit_price_chart'));
-    $.get('MainChartApi/').done(function (result) {
-        main_data = result.data;
-        xAxis = new Array();
-        yAxis = new Array();
-        for (var i = 0; i < main_data.length; i++) {
-            if (main_data[i]['unit_price']) {
-                xAxis.push(formatDateTime(main_data[i]['push_timestrap'] * 1000));
-                yAxis.push(main_data[i]['unit_price']);
-            }
-        }
-        unit_price_chart.setOption({
-            title: {
-                text: '最低价格变化曲线'
-            },
-            tooltip: {},
-            xAxis: {
-                type: 'category',
-                data: xAxis,
-            },
-            yAxis: {
-                type: 'value',
-                min: 'dataMin',
-            },
-            series: [{
-                name: '价格',
-                type: 'line',
-                data: yAxis
-            }]
-        });
+
+    function showCharts() {
+        var points = $('#points').val();
+        var hours = $('#hours').val();
+        $.get('MainChartApi/', {"points": points, "hours": hours},
+            function (result) {
+                max_data = result.main_data.max_data;
+                min_data = result.main_data.min_data;
+                avg_data = result.main_data.avg_data;
+                max_xAxis = new Array();
+                max_yAxis = new Array();
+                min_xAxis = new Array();
+                min_yAxis = new Array();
+                avg_xAxis = new Array();
+                avg_yAxis = new Array();
+                max_info = new Array();
+                min_info = new Array();
+                avg_info = new Array();
+                for (var i = 0; i < max_data.length; i++) {
+                    if (max_data[i]['unit_price']) {
+                        max_xAxis.push(formatDateTime(max_data[i]['push_timestrap'] * 1000));
+                        max_yAxis.push(parseInt(max_data[i]['unit_price']));
+                        max_info.push(collect_max_min_info(max_data[i]));
+                    }
+                }
+                for (var i = 0; i < min_data.length; i++) {
+                    if (min_data[i]['unit_price']) {
+                        min_xAxis.push(formatDateTime(min_data[i]['push_timestrap'] * 1000));
+                        min_yAxis.push(parseInt(min_data[i]['unit_price']));
+                        min_info.push(collect_max_min_info(min_data[i]));
+                    }
+                }
+                for (var i = 0; i < avg_data.length; i++) {
+                    if (avg_data[i]['avg_unit_price']) {
+                        avg_xAxis.push(formatDateTime(avg_data[i]['push_timestrap'] * 1000));
+                        avg_yAxis.push(parseInt(avg_data[i]['avg_unit_price']));
+                        avg_info.push(collect_avg_info(avg_data[i]));
+                    }
+                }
+                unit_price_chart.hideLoading();
+                unit_price_chart.setOption({
+                    title: {
+                        text: 'wow所有服价格曲线',
+                    },
+                    tooltip: {
+                        trigger: 'item',
+                        {#triggerOn: 'click',#}
+                        enterable: true,
+                        hideDelay: '500',
+                        formatter: function (params, ticket, callback) {
+                            switch (params['seriesName']) {
+                                case '单价最大值':
+                                    return max_info[params['seriesIndex']];
+                                case '单价最小值':
+                                    return min_info[params['seriesIndex']];
+                                case '单价平均值':
+                                    return avg_info[params['seriesIndex']];
+                            }
+                        }
+                    },
+                    legend: {
+                        data: ['单价最大值', '单价最小值', '单价平均值']
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: avg_xAxis,
+                    },
+                    yAxis: {
+                        type: 'value',
+                        min: 'dataMin',
+                    },
+                    series: [
+                        {
+                            name: '单价最大值',
+                            type: 'line',
+                            data: max_yAxis,
+                        }, {
+                            name: '单价最小值',
+                            type: 'line',
+                            data: min_yAxis,
+                        }, {
+                            name: '单价平均值',
+                            type: 'line',
+                            data: avg_yAxis,
+                        }
+                    ]
+                });
+            });
+    }
+
+    showCharts();
+    $('.options-select').on('change', function () {
+        unit_price_chart.showLoading();
+        showCharts();
+        var count_days = $('#points').val() * $('#hours').val() / 24;
+        $('#count_days').text(count_days);
     });
 </script>
 </html>
